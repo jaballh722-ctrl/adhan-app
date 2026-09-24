@@ -1,0 +1,22 @@
+{
+  "name": "اذان",
+  "short_name": "اذان",
+  "description": "موقع بسيط لمعرفة مواقيت الصلاة.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F1B2D",
+  "theme_color": "#0F1B2D",
+  "categories": ["lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "ChatGPT_Image_Aug_1__2026__10_13_05_PM-removebg-preview.png",
+      "sizes": "500x500",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

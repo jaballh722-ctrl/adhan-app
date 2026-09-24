@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0F1B2D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="مواقيت الصلاة">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>مواقيت الصلاة</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="500x500" href="ChatGPT_Image_Aug_1__2026__10_13_05_PM-removebg-preview.png">
+<link rel="apple-touch-icon" sizes="500x500" href="ChatGPT_Image_Aug_1__2026__10_13_05_PM-removebg-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1B2D;
+    --surface:#17263C;
+    --surface-2:#1E3049;
+    --accent:#C6A15B;
+    --accent-soft:rgba(198,161,91,0.14);
+    --text:#E9E4D6;
+    --text-muted:#8FA0B8;
+    --border:rgba(233,228,214,0.08);
+    --shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  html[data-theme="day"]{
+    --bg:#EDEAE0;
+    --surface:#FBF9F3;
+    --surface-2:#F3EFE4;
+    --accent:#A8783E;
+    --accent-soft:rgba(168,120,62,0.12);
+    --text:#24303F;
+    --text-muted:#6B7280;
+    --border:rgba(36,48,63,0.08);
+    --shadow: 0 20px 50px rgba(36,48,63,0.10);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Tajawal', sans-serif;
+    min-height:100vh;
+    transition:background .5s ease, color .5s ease;
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 60px;
+  }
+  .wrap{ width:100%; max-width:620px; }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:22px;
+  }
+  .brand{ display:flex; flex-direction:column; gap:2px; }
+  .brand h1{
+    font-family:'Amiri', serif;
+    font-weight:700;
+    font-size:1.9rem;
+    letter-spacing:.5px;
+  }
+  .brand span{ color:var(--text-muted); font-size:.8rem; }
+
+  .header-actions{ display:flex; gap:10px; flex-shrink:0; }
+
+  .install-btn{
+    min-height:44px;
+    border-radius:999px;
+    border:1px solid var(--accent);
+    background:var(--accent);
+    color:var(--surface);
+    padding:0 16px;
+    font-family:'Tajawal', sans-serif;
+    font-weight:700;
+    font-size:.86rem;
+    cursor:pointer;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    box-shadow:0 10px 28px rgba(0,0,0,0.20);
+    transition:transform .3s ease, opacity .3s ease;
+    white-space:nowrap;
+  }
+  .install-btn.show{ display:flex; }
+  .install-btn:hover{ transform:translateY(-1px); }
+  .install-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .notify-btn{
+    min-height:44px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text);
+    padding:0 13px;
+    font-family:'Tajawal', sans-serif;
+    font-weight:700;
+    font-size:.84rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .notify-btn.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .notify-btn:disabled{ cursor:not-allowed; opacity:.55; }
+
+  .theme-toggle{
+    width:44px; height:44px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--accent);
+    font-size:1.15rem;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .3s ease, background .4s ease, opacity .3s ease;
+    flex-shrink:0;
+  }
+  .theme-toggle:hover{ transform:scale(1.06); }
+  .theme-toggle.muted{ opacity:.4; }
+  .theme-toggle:focus-visible, .notify-btn:focus-visible, .location-prompt button:focus-visible, input:focus-visible, .card:focus-visible, .city-item:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+
+  /* ---- Azan alert banner ---- */
+  .azan-banner{
+    position:fixed;
+    left:16px; right:16px; bottom:-120px;
+    max-width:588px;
+    margin:0 auto;
+    background:var(--surface);
+    border:1px solid var(--accent);
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    border-radius:16px;
+    padding:14px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    z-index:50;
+    transition:bottom .4s ease;
+  }
+  .azan-banner.show{ bottom:16px; }
+  .azan-banner span{
+    font-family:'Amiri', serif;
+    font-size:1.05rem;
+    color:var(--accent);
+  }
+  .azan-banner button{
+    background:var(--accent);
+    color:var(--surface);
+    border:none;
+    border-radius:10px;
+    padding:8px 18px;
+    font-family:'Tajawal', sans-serif;
+    font-weight:700;
+    font-size:.85rem;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+
+  /* ---- Searchable city box ---- */
+  .location-prompt{
+    margin-bottom:14px;
+    padding:12px 14px;
+    border:1px solid var(--accent);
+    border-radius:16px;
+    background:var(--accent-soft);
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    box-shadow:var(--shadow);
+  }
+  .location-prompt.show{ display:flex; }
+  .location-prompt-text{ display:flex; flex-direction:column; gap:2px; font-size:.9rem; }
+  .location-prompt-text b{ color:var(--accent); font-weight:800; }
+  .location-prompt-text span{ color:var(--text-muted); font-size:.78rem; line-height:1.5; }
+  .location-prompt button{
+    border:0;
+    border-radius:999px;
+    background:var(--accent);
+    color:var(--surface);
+    padding:9px 14px;
+    font-family:'Tajawal', sans-serif;
+    font-weight:800;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .city-row{ margin-bottom:20px; position:relative; }
+  .search-box{ position:relative; }
+  .search-box svg{
+    position:absolute; top:50%; right:16px; transform:translateY(-50%);
+    width:16px; height:16px; opacity:.55; pointer-events:none;
+  }
+  #citySearch{
+    width:100%;
+    background:var(--surface);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:13px 44px 13px 16px;
+    font-family:'Tajawal', sans-serif;
+    font-size:.95rem;
+    box-shadow: var(--shadow);
+  }
+  #citySearch::placeholder{ color:var(--text-muted); }
+  .city-list{
+    position:absolute;
+    top:calc(100% + 8px);
+    right:0; left:0;
+    max-height:260px;
+    overflow-y:auto;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    z-index:20;
+    display:none;
+  }
+  .city-list.open{ display:block; }
+  .city-item{
+    padding:11px 16px;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:8px;
+    font-size:.92rem;
+  }
+  .city-item:hover, .city-item.highlighted{ background:var(--accent-soft); }
+  .city-item b{ font-weight:500; }
+  .city-item span{ color:var(--text-muted); font-size:.78rem; display:inline-flex; align-items:center; gap:4px; }
+  .city-item.location-option b, .city-item.location-option span{ color:var(--accent); }
+  .city-empty{ padding:14px 16px; color:var(--text-muted); font-size:.85rem; }
+
+  /* ---- Signature: horizon arc ---- */
+  .arc-panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:24px;
+    padding:26px 20px 18px;
+    box-shadow:var(--shadow);
+    margin-bottom:22px;
+    text-align:center;
+  }
+  .arc-svg{ width:100%; max-width:460px; height:auto; }
+  .arc-track{ fill:none; stroke:var(--border); stroke-width:2; }
+  .arc-point circle{ fill:var(--surface-2); stroke:var(--border); stroke-width:1.5; }
+  .arc-point.next circle{ fill:var(--accent); stroke:none; }
+  .arc-point text{
+    fill:var(--text-muted);
+    font-family:'Tajawal', sans-serif;
+    font-size:11px;
+  }
+  .arc-point.next text{ fill:var(--accent); font-weight:700; }
+  .arc-glyph{
+    font-size:15px;
+    fill:var(--accent);
+  }
+
+  .next-prayer{ margin-top:4px; }
+  .next-prayer .label{ color:var(--text-muted); font-size:.85rem; }
+  .next-prayer .name{
+    font-family:'Amiri', serif;
+    font-size:1.7rem;
+    color:var(--accent);
+    margin:2px 0 6px;
+  }
+  .countdown{
+    font-family:'Tajawal', sans-serif;
+    font-weight:700;
+    font-size:2.1rem;
+    letter-spacing:1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown-label{ color:var(--text-muted); font-size:.78rem; margin-top:2px; }
+  .retry-btn{
+    margin-top:14px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    border:1px solid var(--accent);
+    border-radius:12px;
+    padding:9px 20px;
+    font-family:'Tajawal', sans-serif;
+    font-size:.85rem;
+    cursor:pointer;
+  }
+  .retry-btn:hover{ background:var(--accent); color:var(--surface); }
+
+  /* ---- Prayer grid ---- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .card{
+    position:relative;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px 8px 16px;
+    text-align:center;
+    transition:border-color .3s ease, background .3s ease;
+    overflow:hidden;
+  }
+  .card.next{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .card.next::after{
+    content:"";
+    position:absolute;
+    left:22%; right:22%; bottom:0;
+    height:3px;
+    border-radius:3px 3px 0 0;
+    background:var(--accent);
+    box-shadow:0 0 10px var(--accent);
+  }
+  .card .p-name{
+    font-family:'Amiri', serif;
+    font-size:1.05rem;
+    margin-bottom:6px;
+  }
+  .card.next .p-name{ color:var(--accent); }
+  .card .p-time{
+    font-size:.95rem;
+    font-weight:500;
+    font-variant-numeric: tabular-nums;
+  }
+  .card.secondary .p-name{ opacity:.8; }
+
+  footer{
+    text-align:center;
+    color:var(--text-muted);
+    font-size:.78rem;
+    line-height:1.9;
+  }
+
+  @media (max-width:460px){
+    .header-actions{ gap:8px; }
+    .install-btn{ padding:0 12px; font-size:.8rem; }
+  }
+
+  @media (max-width:380px){
+    .brand h1{ font-size:1.6rem; }
+    .countdown{ font-size:1.7rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>مواقيت الصلاة</h1>
+      <span id="dateLine">—</span>
+    </div>
+    <div class="header-actions">
+      <button class="install-btn" id="installBtn" type="button" aria-label="تحميل الموقع على الشاشة الرئيسية">⬇ تحميل</button>
+      <button class="notify-btn" id="notifyBtn" type="button" aria-label="تفعيل إشعارات الأدعية كل ساعة">🔔 تفعيل الأدعية</button>
+      <button class="theme-toggle" id="themeToggle" aria-label="تبديل الوضع الليلي والنهاري">☾</button>
+    </div>
+  </header>
+
+  <div class="azan-banner" id="azanBanner">
+    <span id="azanBannerText">حان وقت الصلاة</span>
+    <button id="azanStopBtn">كتم</button>
+  </div>
+
+  <audio id="azanAudio" src="adhan.mp3" preload="none"></audio>
+
+  <div class="location-prompt" id="locationPrompt">
+    <div class="location-prompt-text">
+      <b>📍 استخدم موقعك الحالي</b>
+      <span>وافق على إذن اللوكيشن عشان المواقيت تتحسب على مكانك بالظبط.</span>
+    </div>
+    <button id="locationPromptBtn" type="button">تحديد موقعي</button>
+  </div>
+
+  <div class="city-row">
+    <div class="search-box">
+      <input type="text" id="citySearch" placeholder="ابحث عن مدينتك..." autocomplete="off" aria-label="ابحث عن مدينتك">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <div class="city-list" id="cityList" role="listbox"></div>
+    </div>
+  </div>
+
+  <div class="arc-panel">
+    <svg class="arc-svg" viewBox="0 0 460 240" id="arcSvg" aria-hidden="true">
+      <path class="arc-track" id="arcTrack"></path>
+      <g id="arcPoints"></g>
+      <text class="arc-glyph" id="arcGlyph" text-anchor="middle"></text>
+    </svg>
+    <div class="next-prayer">
+      <div class="label" id="statusLabel">جاري تحميل المواقيت…</div>
+      <div class="name" id="nextName">—</div>
+      <div class="countdown" id="countdown">--:--:--</div>
+      <div class="countdown-label" id="countdownLabel">متبقٍّ حتى الأذان</div>
+      <button id="retryBtn" class="retry-btn" style="display:none">إعادة المحاولة</button>
+    </div>
+  </div>
+
+  <div class="grid" id="prayerGrid"></div>
+
+  <footer id="footerNote"></footer>
+
+</div>
+
+<script>
+(function(){
+
+  const CITIES = [
+    // ===== مصر =====
+    { id:"cairo", name:"القاهرة", country:"مصر", lat:30.0444, lng:31.2357, method:5 },
+    { id:"alex", name:"الإسكندرية", country:"مصر", lat:31.2001, lng:29.9187, method:5 },
+    { id:"giza", name:"الجيزة", country:"مصر", lat:30.0131, lng:31.2089, method:5 },
+    { id:"mansoura", name:"المنصورة", country:"مصر", lat:31.0409, lng:31.3785, method:5 },
+    { id:"tanta", name:"طنطا", country:"مصر", lat:30.7865, lng:31.0004, method:5 },
+    { id:"asyut", name:"أسيوط", country:"مصر", lat:27.1809, lng:31.1837, method:5 },
+    { id:"luxor", name:"الأقصر", country:"مصر", lat:25.6872, lng:32.6396, method:5 },
+    { id:"aswan", name:"أسوان", country:"مصر", lat:24.0889, lng:32.8998, method:5 },
+    { id:"ismailia", name:"الإسماعيلية", country:"مصر", lat:30.5965, lng:32.2715, method:5 },
+    { id:"portsaid", name:"بورسعيد", country:"مصر", lat:31.2653, lng:32.3019, method:5 },
+    { id:"zagazig", name:"الزقازيق", country:"مصر", lat:30.5877, lng:31.5020, method:5 },
+    { id:"damanhur", name:"دمنهور", country:"مصر", lat:31.0341, lng:30.4682, method:5 },
+    { id:"beni_suef", name:"بني سويف", country:"مصر", lat:29.0661, lng:31.0994, method:5 },
+    { id:"minya", name:"المنيا", country:"مصر", lat:28.1099, lng:30.7503, method:5 },
+    { id:"sohag", name:"سوهاج", country:"مصر", lat:26.5569, lng:31.6948, method:5 },
+    { id:"qena", name:"قنا", country:"مصر", lat:26.1551, lng:32.7160, method:5 },
+    { id:"damietta", name:"دمياط", country:"مصر", lat:31.4165, lng:31.8133, method:5 },
+    { id:"kafr_el_sheikh", name:"كفر الشيخ", country:"مصر", lat:31.1107, lng:30.9399, method:5 },
+    { id:"fayoum", name:"الفيوم", country:"مصر", lat:29.3084, lng:30.8428, method:5 },
+    { id:"arish", name:"العريش", country:"مصر", lat:31.1313, lng:33.7984, method:5 },
+    { id:"marsa_matruh", name:"مرسى مطروح", country:"مصر", lat:31.3543, lng:27.2373, method:5 },
+    { id:"hurghada", name:"الغردقة", country:"مصر", lat:27.2579, lng:33.8116, method:5 },
+    { id:"sharm", name:"شرم الشيخ", country:"مصر", lat:27.9158, lng:34.3300, method:5 },
+    { id:"suez", name:"السويس", country:"مصر", lat:29.9668, lng:32.5498, method:5 },
+    { id:"beni_mazar", name:"بني مزار", country:"مصر", lat:28.4989, lng:30.8014, method:5 },
+    { id:"edfu", name:"إدفو", country:"مصر", lat:24.9781, lng:32.8730, method:5 },
+
+    // ===== السعودية =====
+    { id:"riyadh", name:"الرياض", country:"السعودية", lat:24.7136, lng:46.6753, method:4 },
+    { id:"jeddah", name:"جدة", country:"السعودية", lat:21.4858, lng:39.1925, method:4 },
+    { id:"makkah", name:"مكة المكرمة", country:"السعودية", lat:21.3891, lng:39.8579, method:4 },
+    { id:"madinah", name:"المدينة المنورة", country:"السعودية", lat:24.5247, lng:39.5692, method:4 },
+    { id:"dammam", name:"الدمام", country:"السعودية", lat:26.4207, lng:50.0888, method:4 },
+    { id:"hail", name:"حائل", country:"السعودية", lat:27.5219, lng:41.6907, method:4 },
+    { id:"abha", name:"أبها", country:"السعودية", lat:18.2164, lng:42.5053, method:4 },
+    { id:"tabuk", name:"تبوك", country:"السعودية", lat:28.3998, lng:36.5715, method:4 },
+    { id:"taif", name:"الطائف", country:"السعودية", lat:21.2703, lng:40.4158, method:4 },
+    { id:"buraydah", name:"بريدة", country:"السعودية", lat:26.3592, lng:43.9818, method:4 },
+    { id:"najran", name:"نجران", country:"السعودية", lat:17.5650, lng:44.2289, method:4 },
+    { id:"jazan", name:"جازان", country:"السعودية", lat:16.8892, lng:42.5511, method:4 },
+    { id:"hofuf", name:"الهفوف", country:"السعودية", lat:25.3833, lng:49.5833, method:4 },
+    { id:"qatif", name:"القطيف", country:"السعودية", lat:26.5654, lng:50.0089, method:4 },
+    { id:"jubail", name:"الجبيل", country:"السعودية", lat:27.0174, lng:49.6583, method:4 },
+    { id:"yanbu", name:"ينبع", country:"السعودية", lat:24.0895, lng:38.0618, method:4 },
+    { id:"arar", name:"عرعر", country:"السعودية", lat:30.9753, lng:41.0381, method:4 },
+    { id:"sakaka", name:"سكاكا", country:"السعودية", lat:29.9697, lng:40.2064, method:4 },
+    { id:"qurayyat", name:"القريات", country:"السعودية", lat:31.3318, lng:37.3428, method:4 },
+    { id:"rafha", name:"رفحاء", country:"السعودية", lat:29.6202, lng:43.4946, method:4 },
+    { id:"hafr_al_batin", name:"حفر الباطن", country:"السعودية", lat:28.4328, lng:45.9708, method:4 },
+    { id:"al_bahah", name:"الباحة", country:"السعودية", lat:20.0129, lng:41.4677, method:4 },
+    { id:"alkharj", name:"الخرج", country:"السعودية", lat:24.1554, lng:47.3120, method:4 },
+    { id:"unaizah", name:"عنيزة", country:"السعودية", lat:26.0911, lng:43.9930, method:4 },
+    { id:"bisha", name:"بيشة", country:"السعودية", lat:19.9844, lng:42.6052, method:4 },
+    { id:"alkhafji", name:"الخفجي", country:"السعودية", lat:28.4251, lng:48.4913, method:4 },
+    { id:"ras_tanura", name:"رأس تنورة", country:"السعودية", lat:26.6467, lng:50.1597, method:4 },
+    { id:"shaqra", name:"شقراء", country:"السعودية", lat:25.2486, lng:45.2468, method:4 },
+    { id:"majmaah", name:"المجمعة", country:"السعودية", lat:25.9039, lng:45.3566, method:4 },
+    { id:"khamis_mushait", name:"خميس مشيط", country:"السعودية", lat:18.3060, lng:42.7290, method:4 },
+    { id:"dawadmi", name:"الدوادمي", country:"السعودية", lat:24.5078, lng:44.3931, method:4 },
+    { id:"wadi_dawasir", name:"وادي الدواسر", country:"السعودية", lat:20.4972, lng:44.8000, method:4 },
+    { id:"turaif", name:"طريف", country:"السعودية", lat:31.6764, lng:38.6631, method:4 },
+
+    // ===== الإمارات =====
+    { id:"abudhabi", name:"أبوظبي", country:"الإمارات", lat:24.4539, lng:54.3773, method:8 },
+    { id:"dubai", name:"دبي", country:"الإمارات", lat:25.2048, lng:55.2708, method:8 },
+    { id:"sharjah", name:"الشارقة", country:"الإمارات", lat:25.3463, lng:55.4209, method:8 },
+    { id:"ajman", name:"عجمان", country:"الإمارات", lat:25.4052, lng:55.5136, method:8 },
+    { id:"rak", name:"رأس الخيمة", country:"الإمارات", lat:25.8007, lng:55.9762, method:8 },
+    { id:"fujairah", name:"الفجيرة", country:"الإمارات", lat:25.1288, lng:56.3265, method:8 },
+    { id:"alain", name:"العين", country:"الإمارات", lat:24.2075, lng:55.7447, method:8 },
+    { id:"khorfakkan", name:"خورفكان", country:"الإمارات", lat:25.3397, lng:56.3028, method:8 },
+    { id:"kalba", name:"كلباء", country:"الإمارات", lat:25.0742, lng:56.3569, method:8 },
+    { id:"dibba", name:"دبا الفجيرة", country:"الإمارات", lat:25.5925, lng:56.2618, method:8 },
+    { id:"ruwais", name:"الرويس", country:"الإمارات", lat:24.1103, lng:52.7306, method:8 },
+    { id:"madam", name:"المدام", country:"الإمارات", lat:24.9556, lng:55.7686, method:8 },
+
+    // ===== الكويت =====
+    { id:"kuwait", name:"مدينة الكويت", country:"الكويت", lat:29.3759, lng:47.9774, method:9 },
+    { id:"ahmadi", name:"الأحمدي", country:"الكويت", lat:29.0769, lng:48.0839, method:9 },
+    { id:"jahra", name:"الجهراء", country:"الكويت", lat:29.3375, lng:47.6581, method:9 },
+    { id:"farwaniya", name:"الفروانية", country:"الكويت", lat:29.2775, lng:47.9586, method:9 },
+    { id:"hawalli", name:"حولي", country:"الكويت", lat:29.3338, lng:48.0297, method:9 },
+    { id:"salmiya", name:"السالمية", country:"الكويت", lat:29.3360, lng:48.0717, method:9 },
+
+    // ===== قطر =====
+    { id:"doha", name:"الدوحة", country:"قطر", lat:25.2854, lng:51.5310, method:10 },
+    { id:"alkhor", name:"الخور", country:"قطر", lat:25.6839, lng:51.5058, method:10 },
+    { id:"wakrah", name:"الوكرة", country:"قطر", lat:25.1715, lng:51.6034, method:10 },
+    { id:"dukhan", name:"دخان", country:"قطر", lat:25.4249, lng:50.7823, method:10 },
+    { id:"alrayyan", name:"الريان", country:"قطر", lat:25.2919, lng:51.4244, method:10 },
+
+    // ===== البحرين =====
+    { id:"manama", name:"المنامة", country:"البحرين", lat:26.2285, lng:50.5860, method:8 },
+    { id:"muharraq", name:"المحرق", country:"البحرين", lat:26.2572, lng:50.6119, method:8 },
+    { id:"riffa", name:"الرفاع", country:"البحرين", lat:26.1300, lng:50.5550, method:8 },
+    { id:"isa_town", name:"مدينة عيسى", country:"البحرين", lat:26.1736, lng:50.5478, method:8 },
+
+    // ===== عمان =====
+    { id:"muscat", name:"مسقط", country:"عُمان", lat:23.5880, lng:58.3829, method:8 },
+    { id:"salalah", name:"صلالة", country:"عُمان", lat:17.0194, lng:54.0897, method:8 },
+    { id:"sohar", name:"صحار", country:"عُمان", lat:24.3475, lng:56.7097, method:8 },
+    { id:"nizwa", name:"نزوى", country:"عُمان", lat:22.9333, lng:57.5333, method:8 },
+    { id:"sur", name:"صور", country:"عُمان", lat:22.5667, lng:59.5289, method:8 },
+    { id:"ibri", name:"عبري", country:"عُمان", lat:23.2257, lng:56.5157, method:8 },
+    { id:"barka", name:"بركاء", country:"عُمان", lat:23.7070, lng:57.8898, method:8 },
+    { id:"rustaq", name:"الرستاق", country:"عُمان", lat:23.3908, lng:57.4244, method:8 },
+    { id:"bahla", name:"بهلاء", country:"عُمان", lat:22.9645, lng:57.3047, method:8 },
+    { id:"khasab", name:"خصب", country:"عُمان", lat:26.1799, lng:56.2477, method:8 },
+
+    // ===== الأردن =====
+    { id:"amman", name:"عمّان", country:"الأردن", lat:31.9454, lng:35.9284, method:23 },
+    { id:"zarqa", name:"الزرقاء", country:"الأردن", lat:32.0728, lng:36.0880, method:23 },
+    { id:"irbid", name:"إربد", country:"الأردن", lat:32.5556, lng:35.8500, method:23 },
+    { id:"aqaba", name:"العقبة", country:"الأردن", lat:29.5319, lng:35.0061, method:23 },
+    { id:"salt", name:"السلط", country:"الأردن", lat:32.0392, lng:35.7272, method:23 },
+    { id:"madaba", name:"مادبا", country:"الأردن", lat:31.7197, lng:35.7942, method:23 },
+    { id:"karak", name:"الكرك", country:"الأردن", lat:31.1854, lng:35.7047, method:23 },
+    { id:"tafilah", name:"الطفيلة", country:"الأردن", lat:30.8373, lng:35.6045, method:23 },
+    { id:"maan", name:"معان", country:"الأردن", lat:30.1962, lng:35.7333, method:23 },
+    { id:"jerash", name:"جرش", country:"الأردن", lat:32.2811, lng:35.8994, method:23 },
+    { id:"ajloun", name:"عجلون", country:"الأردن", lat:32.3326, lng:35.7519, method:23 },
+    { id:"mafraq", name:"المفرق", country:"الأردن", lat:32.3434, lng:36.2081, method:23 },
+    { id:"ramtha", name:"الرمثا", country:"الأردن", lat:32.5556, lng:36.0072, method:23 },
+    { id:"wadi_musa", name:"وادي موسى (البتراء)", country:"الأردن", lat:30.3271, lng:35.4820, method:23 },
+
+    // ===== فلسطين =====
+    { id:"jerusalem", name:"القدس", country:"فلسطين", lat:31.7683, lng:35.2137, method:3 },
+    { id:"gaza", name:"غزة", country:"فلسطين", lat:31.5017, lng:34.4668, method:3 },
+    { id:"hebron", name:"الخليل", country:"فلسطين", lat:31.5326, lng:35.0998, method:3 },
+    { id:"nablus", name:"نابلس", country:"فلسطين", lat:32.2211, lng:35.2544, method:3 },
+    { id:"ramallah", name:"رام الله", country:"فلسطين", lat:31.9038, lng:35.2034, method:3 },
+    { id:"bethlehem", name:"بيت لحم", country:"فلسطين", lat:31.7054, lng:35.2024, method:3 },
+    { id:"jenin", name:"جنين", country:"فلسطين", lat:32.4611, lng:35.2960, method:3 },
+    { id:"tulkarm", name:"طولكرم", country:"فلسطين", lat:32.3108, lng:35.0286, method:3 },
+    { id:"qalqilya", name:"قلقيلية", country:"فلسطين", lat:32.1892, lng:34.9700, method:3 },
+    { id:"khan_yunis", name:"خان يونس", country:"فلسطين", lat:31.3469, lng:34.3029, method:3 },
+    { id:"rafah", name:"رفح", country:"فلسطين", lat:31.2980, lng:34.2469, method:3 },
+    { id:"jericho", name:"أريحا", country:"فلسطين", lat:31.8667, lng:35.4500, method:3 },
+    { id:"salfit", name:"سلفيت", country:"فلسطين", lat:32.0836, lng:35.1798, method:3 },
+    { id:"tubas", name:"طوباس", country:"فلسطين", lat:32.3211, lng:35.3689, method:3 },
+
+    // ===== لبنان =====
+    { id:"beirut", name:"بيروت", country:"لبنان", lat:33.8938, lng:35.5018, method:3 },
+    { id:"tripolilb", name:"طرابلس", country:"لبنان", lat:34.4335, lng:35.8497, method:3 },
+    { id:"sidon", name:"صيدا", country:"لبنان", lat:33.5571, lng:35.3715, method:3 },
+    { id:"zahle", name:"زحلة", country:"لبنان", lat:33.8463, lng:35.9019, method:3 },
+    { id:"baalbek", name:"بعلبك", country:"لبنان", lat:34.0059, lng:36.2181, method:3 },
+    { id:"byblos", name:"جبيل", country:"لبنان", lat:34.1230, lng:35.6519, method:3 },
+    { id:"tyre", name:"صور", country:"لبنان", lat:33.2704, lng:35.2038, method:3 },
+    { id:"nabatieh", name:"النبطية", country:"لبنان", lat:33.3789, lng:35.4839, method:3 },
+    { id:"jounieh", name:"جونية", country:"لبنان", lat:33.9808, lng:35.6178, method:3 },
+    { id:"batroun", name:"البترون", country:"لبنان", lat:34.2553, lng:35.6581, method:3 },
+    { id:"aley", name:"عاليه", country:"لبنان", lat:33.8069, lng:35.5978, method:3 },
+
+    // ===== سوريا =====
+    { id:"damascus", name:"دمشق", country:"سوريا", lat:33.5138, lng:36.2765, method:3 },
+    { id:"aleppo", name:"حلب", country:"سوريا", lat:36.2021, lng:37.1343, method:3 },
+    { id:"homs", name:"حمص", country:"سوريا", lat:34.7308, lng:36.7090, method:3 },
+    { id:"latakia", name:"اللاذقية", country:"سوريا", lat:35.5317, lng:35.7900, method:3 },
+    { id:"hama", name:"حماة", country:"سوريا", lat:35.1318, lng:36.7578, method:3 },
+    { id:"deir_ez_zor", name:"دير الزور", country:"سوريا", lat:35.3359, lng:40.1408, method:3 },
+    { id:"raqqa", name:"الرقة", country:"سوريا", lat:35.9500, lng:39.0167, method:3 },
+    { id:"idlib", name:"إدلب", country:"سوريا", lat:35.9306, lng:36.6339, method:3 },
+    { id:"daraa", name:"درعا", country:"سوريا", lat:32.6189, lng:36.1021, method:3 },
+    { id:"tartus", name:"طرطوس", country:"سوريا", lat:34.8890, lng:35.8866, method:3 },
+    { id:"qamishli", name:"القامشلي", country:"سوريا", lat:37.0522, lng:41.2189, method:3 },
+    { id:"sweida", name:"السويداء", country:"سوريا", lat:32.7094, lng:36.5694, method:3 },
+    { id:"tadmur", name:"تدمر", country:"سوريا", lat:34.5602, lng:38.2842, method:3 },
+
+    // ===== العراق =====
+    { id:"baghdad", name:"بغداد", country:"العراق", lat:33.3152, lng:44.3661, method:3 },
+    { id:"basra", name:"البصرة", country:"العراق", lat:30.5085, lng:47.7835, method:3 },
+    { id:"mosul", name:"الموصل", country:"العراق", lat:36.3400, lng:43.1300, method:3 },
+    { id:"erbil", name:"أربيل", country:"العراق", lat:36.1911, lng:44.0092, method:3 },
+    { id:"najaf", name:"النجف", country:"العراق", lat:31.9985, lng:44.3398, method:3 },
+    { id:"karbala", name:"كربلاء", country:"العراق", lat:32.6160, lng:44.0249, method:3 },
+    { id:"kirkuk", name:"كركوك", country:"العراق", lat:35.4681, lng:44.3922, method:3 },
+    { id:"sulaymaniyah", name:"السليمانية", country:"العراق", lat:35.5558, lng:45.4351, method:3 },
+    { id:"duhok", name:"دهوك", country:"العراق", lat:36.8617, lng:42.9880, method:3 },
+    { id:"nasiriyah", name:"الناصرية", country:"العراق", lat:31.0429, lng:46.2571, method:3 },
+    { id:"amara", name:"العمارة", country:"العراق", lat:31.8353, lng:47.1443, method:3 },
+    { id:"diwaniyah", name:"الديوانية", country:"العراق", lat:31.9887, lng:44.9247, method:3 },
+    { id:"ramadi", name:"الرمادي", country:"العراق", lat:33.4200, lng:43.3000, method:3 },
+    { id:"fallujah", name:"الفلوجة", country:"العراق", lat:33.3489, lng:43.7867, method:3 },
+    { id:"samarra", name:"سامراء", country:"العراق", lat:34.1959, lng:43.8742, method:3 },
+    { id:"tikrit", name:"تكريت", country:"العراق", lat:34.6044, lng:43.6773, method:3 },
+    { id:"kut", name:"الكوت", country:"العراق", lat:32.5122, lng:45.8188, method:3 },
+    { id:"hillah", name:"الحلة", country:"العراق", lat:32.4839, lng:44.4239, method:3 },
+
+    // ===== اليمن =====
+    { id:"sanaa", name:"صنعاء", country:"اليمن", lat:15.3694, lng:44.1910, method:3 },
+    { id:"aden", name:"عدن", country:"اليمن", lat:12.7855, lng:45.0187, method:3 },
+    { id:"taiz", name:"تعز", country:"اليمن", lat:13.5795, lng:44.0209, method:3 },
+    { id:"hodeidah", name:"الحديدة", country:"اليمن", lat:14.7978, lng:42.9545, method:3 },
+    { id:"ibb", name:"إب", country:"اليمن", lat:13.9667, lng:44.1833, method:3 },
+    { id:"mukalla", name:"المكلا", country:"اليمن", lat:14.5425, lng:49.1242, method:3 },
+    { id:"dhamar", name:"ذمار", country:"اليمن", lat:14.5427, lng:44.4058, method:3 },
+    { id:"saada", name:"صعدة", country:"اليمن", lat:16.9402, lng:43.7636, method:3 },
+    { id:"marib", name:"مأرب", country:"اليمن", lat:15.4622, lng:45.3258, method:3 },
+    { id:"zinjibar", name:"زنجبار", country:"اليمن", lat:13.1281, lng:45.3792, method:3 },
+    { id:"seiyun", name:"سيئون", country:"اليمن", lat:15.9427, lng:48.7883, method:3 },
+
+    // ===== السودان =====
+    { id:"khartoum", name:"الخرطوم", country:"السودان", lat:15.5007, lng:32.5599, method:3 },
+    { id:"omdurman", name:"أم درمان", country:"السودان", lat:15.6445, lng:32.4777, method:3 },
+    { id:"portsudan", name:"بورتسودان", country:"السودان", lat:19.6158, lng:37.2164, method:3 },
+    { id:"kassala", name:"كسلا", country:"السودان", lat:15.4514, lng:36.4000, method:3 },
+    { id:"nyala", name:"نيالا", country:"السودان", lat:12.0500, lng:24.8833, method:3 },
+    { id:"el_obeid", name:"الأبيض", country:"السودان", lat:13.1833, lng:30.2167, method:3 },
+    { id:"wad_madani", name:"ود مدني", country:"السودان", lat:14.4012, lng:33.5199, method:3 },
+    { id:"atbara", name:"عطبرة", country:"السودان", lat:17.7022, lng:33.9867, method:3 },
+    { id:"el_fasher", name:"الفاشر", country:"السودان", lat:13.6289, lng:25.3489, method:3 },
+    { id:"kosti", name:"كوستي", country:"السودان", lat:13.1636, lng:32.6656, method:3 },
+    { id:"gedaref", name:"القضارف", country:"السودان", lat:14.0350, lng:35.3833, method:3 },
+
+    // ===== ليبيا =====
+    { id:"tripoli", name:"طرابلس", country:"ليبيا", lat:32.8872, lng:13.1913, method:3 },
+    { id:"benghazi", name:"بنغازي", country:"ليبيا", lat:32.1167, lng:20.0667, method:3 },
+    { id:"misrata", name:"مصراتة", country:"ليبيا", lat:32.3754, lng:15.0925, method:3 },
+    { id:"sabha", name:"سبها", country:"ليبيا", lat:27.0377, lng:14.4283, method:3 },
+    { id:"zawiya", name:"الزاوية", country:"ليبيا", lat:32.7522, lng:12.7278, method:3 },
+    { id:"tobruk", name:"طبرق", country:"ليبيا", lat:32.0836, lng:23.9764, method:3 },
+    { id:"bayda", name:"البيضاء", country:"ليبيا", lat:32.7627, lng:21.7551, method:3 },
+    { id:"sirte", name:"سرت", country:"ليبيا", lat:31.2089, lng:16.5887, method:3 },
+    { id:"zliten", name:"زليتن", country:"ليبيا", lat:32.4674, lng:14.5686, method:3 },
+    { id:"derna", name:"درنة", country:"ليبيا", lat:32.7625, lng:22.6367, method:3 },
+    { id:"ghadames", name:"غدامس", country:"ليبيا", lat:30.1333, lng:9.5000, method:3 },
+
+    // ===== تونس =====
+    { id:"tunis", name:"تونس", country:"تونس", lat:36.8065, lng:10.1815, method:18 },
+    { id:"sfax", name:"صفاقس", country:"تونس", lat:34.7406, lng:10.7603, method:18 },
+    { id:"sousse", name:"سوسة", country:"تونس", lat:35.8256, lng:10.6369, method:18 },
+    { id:"kairouan", name:"القيروان", country:"تونس", lat:35.6781, lng:10.0963, method:18 },
+    { id:"bizerte", name:"بنزرت", country:"تونس", lat:37.2744, lng:9.8739, method:18 },
+    { id:"gabes", name:"قابس", country:"تونس", lat:33.8815, lng:10.0982, method:18 },
+    { id:"gafsa", name:"قفصة", country:"تونس", lat:34.4250, lng:8.7842, method:18 },
+    { id:"monastir", name:"المنستير", country:"تونس", lat:35.7643, lng:10.8113, method:18 },
+    { id:"nabeul", name:"نابل", country:"تونس", lat:36.4561, lng:10.7376, method:18 },
+    { id:"tozeur", name:"توزر", country:"تونس", lat:33.9197, lng:8.1335, method:18 },
+    { id:"djerba", name:"جربة", country:"تونس", lat:33.8076, lng:10.8451, method:18 },
+    { id:"kasserine", name:"القصرين", country:"تونس", lat:35.1667, lng:8.8333, method:18 },
+
+    // ===== الجزائر =====
+    { id:"algiers", name:"الجزائر", country:"الجزائر", lat:36.7538, lng:3.0588, method:19 },
+    { id:"oran", name:"وهران", country:"الجزائر", lat:35.6971, lng:-0.6308, method:19 },
+    { id:"constantine", name:"قسنطينة", country:"الجزائر", lat:36.3650, lng:6.6147, method:19 },
+    { id:"annaba", name:"عنابة", country:"الجزائر", lat:36.9000, lng:7.7667, method:19 },
+    { id:"setif", name:"سطيف", country:"الجزائر", lat:36.1898, lng:5.4108, method:19 },
+    { id:"batna", name:"باتنة", country:"الجزائر", lat:35.5559, lng:6.1741, method:19 },
+    { id:"blida", name:"البليدة", country:"الجزائر", lat:36.4700, lng:2.8300, method:19 },
+    { id:"tlemcen", name:"تلمسان", country:"الجزائر", lat:34.8828, lng:-1.3167, method:19 },
+    { id:"ghardaia", name:"غرداية", country:"الجزائر", lat:32.4900, lng:3.6700, method:19 },
+    { id:"bejaia", name:"بجاية", country:"الجزائر", lat:36.7500, lng:5.0833, method:19 },
+    { id:"ouargla", name:"ورقلة", country:"الجزائر", lat:31.9500, lng:5.3167, method:19 },
+    { id:"biskra", name:"بسكرة", country:"الجزائر", lat:34.8500, lng:5.7333, method:19 },
+    { id:"tizi_ouzou", name:"تيزي وزو", country:"الجزائر", lat:36.7169, lng:4.0497, method:19 },
+    { id:"tamanrasset", name:"تمنراست", country:"الجزائر", lat:22.7850, lng:5.5228, method:19 },
+
+    // ===== المغرب =====
+    { id:"rabat", name:"الرباط", country:"المغرب", lat:34.0209, lng:-6.8416, method:21 },
+    { id:"casablanca", name:"الدار البيضاء", country:"المغرب", lat:33.5731, lng:-7.5898, method:21 },
+    { id:"marrakech", name:"مراكش", country:"المغرب", lat:31.6295, lng:-7.9811, method:21 },
+    { id:"fes", name:"فاس", country:"المغرب", lat:34.0331, lng:-5.0003, method:21 },
+    { id:"tangier", name:"طنجة", country:"المغرب", lat:35.7595, lng:-5.8340, method:21 },
+    { id:"agadir", name:"أكادير", country:"المغرب", lat:30.4278, lng:-9.5981, method:21 },
+    { id:"meknes", name:"مكناس", country:"المغرب", lat:33.8935, lng:-5.5473, method:21 },
+    { id:"oujda", name:"وجدة", country:"المغرب", lat:34.6867, lng:-1.9114, method:21 },
+    { id:"kenitra", name:"القنيطرة", country:"المغرب", lat:34.2610, lng:-6.5802, method:21 },
+    { id:"tetouan", name:"تطوان", country:"المغرب", lat:35.5785, lng:-5.3684, method:21 },
+    { id:"safi", name:"آسفي", country:"المغرب", lat:32.2994, lng:-9.2372, method:21 },
+    { id:"el_jadida", name:"الجديدة", country:"المغرب", lat:33.2544, lng:-8.5089, method:21 },
+    { id:"nador", name:"الناظور", country:"المغرب", lat:35.1681, lng:-2.9287, method:21 },
+    { id:"essaouira", name:"الصويرة", country:"المغرب", lat:31.5085, lng:-9.7595, method:21 },
+    { id:"ouarzazate", name:"ورزازات", country:"المغرب", lat:30.9189, lng:-6.8934, method:21 },
+    { id:"laayoune", name:"العيون", country:"المغرب", lat:27.1500, lng:-13.2000, method:21 },
+
+    // ===== موريتانيا =====
+    { id:"nouakchott", name:"نواكشوط", country:"موريتانيا", lat:18.0735, lng:-15.9582, method:3 },
+    { id:"nouadhibou", name:"نواذيبو", country:"موريتانيا", lat:20.9425, lng:-17.0362, method:3 },
+    { id:"kiffa", name:"كيفة", country:"موريتانيا", lat:16.6167, lng:-11.4000, method:3 },
+    { id:"rosso", name:"روصو", country:"موريتانيا", lat:16.5136, lng:-15.8058, method:3 },
+    { id:"atar", name:"أطار", country:"موريتانيا", lat:20.5169, lng:-13.0500, method:3 },
+    { id:"zouerate", name:"ازويرات", country:"موريتانيا", lat:22.7333, lng:-12.4667, method:3 },
+    { id:"kaedi", name:"كيهيدي", country:"موريتانيا", lat:16.1500, lng:-13.5000, method:3 },
+
+    // ===== الصومال =====
+    { id:"mogadishu", name:"مقديشو", country:"الصومال", lat:2.0469, lng:45.3182, method:3 },
+    { id:"hargeisa", name:"هرجيسا", country:"الصومال", lat:9.5624, lng:44.0770, method:3 },
+    { id:"kismayo", name:"كيسمايو", country:"الصومال", lat:-0.3582, lng:42.5454, method:3 },
+    { id:"bosaso", name:"بوصاصو", country:"الصومال", lat:11.2833, lng:49.1833, method:3 },
+    { id:"baidoa", name:"بيداوا", country:"الصومال", lat:3.1167, lng:43.6500, method:3 },
+    { id:"berbera", name:"بربرة", country:"الصومال", lat:10.4396, lng:45.0143, method:3 },
+    { id:"garowe", name:"جروي", country:"الصومال", lat:8.4054, lng:48.4845, method:3 },
+
+    // ===== جيبوتي =====
+    { id:"djibouti", name:"جيبوتي", country:"جيبوتي", lat:11.5721, lng:43.1456, method:3 },
+    { id:"ali_sabieh", name:"علي صبيح", country:"جيبوتي", lat:11.1547, lng:42.7108, method:3 },
+    { id:"tadjourah", name:"تاجورة", country:"جيبوتي", lat:11.7889, lng:42.8836, method:3 },
+    { id:"obock", name:"أوبوك", country:"جيبوتي", lat:11.9667, lng:43.2833, method:3 },
+    { id:"dikhil", name:"دخيل", country:"جيبوتي", lat:11.1058, lng:42.3711, method:3 },
+
+    // ===== جزر القمر =====
+    { id:"moroni", name:"موروني", country:"جزر القمر", lat:11.7172, lng:43.2473, method:3 },
+    { id:"mutsamudu", name:"موتسامودو", country:"جزر القمر", lat:-12.1667, lng:44.4167, method:3 },
+    { id:"fomboni", name:"فومبوني", country:"جزر القمر", lat:-12.2833, lng:43.7417, method:3 }
+  ];
+    const METHOD_NAMES = {
+    3:"رابطة العالم الإسلامي", 4:"أم القرى", 5:"مصر", 8:"دول الخليج",
+    9:"الكويت", 10:"قطر", 18:"تونس", 19:"الجزائر", 21:"المغرب", 23:"الأردن"
+  };
+
+  const PRAYERS = [
+    { key:"Fajr",    name:"الفجر" },
+    { key:"Sunrise", name:"الشروق", secondary:true },
+    { key:"Dhuhr",   name:"الظهر" },
+    { key:"Asr",     name:"العصر" },
+    { key:"Maghrib", name:"المغرب" },
+    { key:"Isha",    name:"العشاء" }
+  ];
+
+  const OBLIGATORY = ["Fajr","Dhuhr","Asr","Maghrib","Isha"];
+  const SAVED_CITY_KEY = "prayerTimesSelectedCityId";
+  const SAVED_LOCATION_KEY = "prayerTimesUserLocation";
+  const USER_LOCATION_ID = "user_location";
+  const USER_LOCATION_LABEL = "your location";
+  const LOCATION_ICON = "📍";
+  const HOURLY_DUAS = [
+    "اللهم أعنّي على ذكرك وشكرك وحسن عبادتك.",
+    "رب اشرح لي صدري ويسر لي أمري.",
+    "اللهم اغفر لي ولوالدي وللمؤمنين يوم يقوم الحساب.",
+    "اللهم إني أسألك الهدى والتقى والعفاف والغنى.",
+    "ربنا آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار.",
+    "اللهم اجعل القرآن ربيع قلبي ونور صدري وجلاء حزني.",
+    "يا مقلب القلوب ثبت قلبي على دينك.",
+    "اللهم إني أعوذ بك من الهم والحزن والعجز والكسل."
+  ];
+
+  function getSavedUserLocation(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(SAVED_LOCATION_KEY) || "null");
+      if(!saved || !Number.isFinite(saved.lat) || !Number.isFinite(saved.lng)) return null;
+      return {
+        id: USER_LOCATION_ID,
+        name: USER_LOCATION_LABEL,
+        country: LOCATION_ICON,
+        lat: saved.lat,
+        lng: saved.lng,
+        method: saved.method || getMethodForCoordinates(saved.lat, saved.lng),
+        isUserLocation: true
+      };
+    }catch{
+      return null;
+    }
+  }
+
+  function getMethodForCoordinates(lat, lng){
+    const nearest = CITIES.reduce((best, city)=>{
+      const distance = Math.hypot(city.lat - lat, city.lng - lng);
+      return !best || distance < best.distance ? { city, distance } : best;
+    }, null);
+    return nearest?.city.method || 3;
+  }
+
+  function getLocationChoices(){
+    const savedLocation = getSavedUserLocation();
+    return savedLocation ? [savedLocation, ...CITIES] : [
+      { id: USER_LOCATION_ID, name: USER_LOCATION_LABEL, country: LOCATION_ICON, method: 3, isUserLocation: true },
+      ...CITIES
+    ];
+  }
+
+  function getCityById(id){
+    if(id === USER_LOCATION_ID) return getSavedUserLocation();
+    return CITIES.find(c=>c.id === id);
+  }
+
+  function getSavedCityId(){
+    const savedCityId = localStorage.getItem(SAVED_CITY_KEY);
+    if(savedCityId === USER_LOCATION_ID && getSavedUserLocation()) return USER_LOCATION_ID;
+    return CITIES.some(c=>c.id === savedCityId) ? savedCityId : "cairo";
+  }
+
+  function saveCityId(id){
+    localStorage.setItem(SAVED_CITY_KEY, id);
+  }
+
+  const state = {
+    theme: "night",
+    cityId: getSavedCityId(),
+    timings: null,
+    hijri: null,
+    gregorian: null,
+    _interval: null,
+    lastActiveKey: null,
+    ringing: false,
+    muted: false,
+    swRegistration: null,
+    hourlyDuaTimer: null,
+    lastHourlyDuaHour: null
+  };
+
+  const el = {
+    themeToggle: document.getElementById("themeToggle"),
+    azanBanner: document.getElementById("azanBanner"),
+    azanBannerText: document.getElementById("azanBannerText"),
+    azanStopBtn: document.getElementById("azanStopBtn"),
+    azanAudio: document.getElementById("azanAudio"),
+    locationPrompt: document.getElementById("locationPrompt"),
+    locationPromptBtn: document.getElementById("locationPromptBtn"),
+    citySearch: document.getElementById("citySearch"),
+    cityList: document.getElementById("cityList"),
+    dateLine: document.getElementById("dateLine"),
+    nextName: document.getElementById("nextName"),
+    countdown: document.getElementById("countdown"),
+    grid: document.getElementById("prayerGrid"),
+    footerNote: document.getElementById("footerNote"),
+    statusLabel: document.getElementById("statusLabel"),
+    countdownLabel: document.getElementById("countdownLabel"),
+    retryBtn: document.getElementById("retryBtn"),
+    installBtn: document.getElementById("installBtn"),
+    notifyBtn: document.getElementById("notifyBtn"),
+    arcTrack: document.getElementById("arcTrack"),
+    arcPoints: document.getElementById("arcPoints"),
+    arcGlyph: document.getElementById("arcGlyph")
+  };
+
+  // ---------- theme ----------
+  function applyTheme(){
+    document.documentElement.setAttribute("data-theme", state.theme === "day" ? "day" : "night");
+    el.themeToggle.textContent = state.theme === "day" ? "☀" : "☾";
+  }
+  el.themeToggle.addEventListener("click", ()=>{
+    state.theme = state.theme === "day" ? "night" : "day";
+    applyTheme();
+  });
+  applyTheme();
+
+  // ---------- audio ----------
+  function primeAudio(){
+    el.azanAudio.play().then(()=>{
+      el.azanAudio.pause();
+      el.azanAudio.currentTime = 0;
+    }).catch(()=>{});
+  }
+  document.addEventListener("click", primeAudio, { once:true });
+  document.addEventListener("touchstart", primeAudio, { once:true });
+
+  el.azanAudio.addEventListener("ended", ()=>{
+    resetAlert();
+  });
+
+  function showBanner(name){
+    el.azanBannerText.textContent = `حان وقت صلاة ${name}`;
+    el.azanBanner.classList.add("show");
+  }
+  function hideBanner(){
+    el.azanBanner.classList.remove("show");
+  }
+
+  function resetAlert(){
+    state.ringing = false;
+    state.muted = false;
+    el.azanAudio.pause();
+    el.azanAudio.muted = false;
+    el.azanAudio.currentTime = 0;
+    el.azanStopBtn.textContent = "كتم";
+    hideBanner();
+  }
+
+  function startAdhanAlert(prayerName){
+    resetAlert();
+    state.ringing = true;
+    showBanner(prayerName);
+    el.azanAudio.currentTime = 0;
+    el.azanAudio.play().catch(err=>{
+      console.error("azan playback failed:", err);
+    });
+  }
+
+  function toggleMute(){
+    if(!state.ringing) return;
+    state.muted = !state.muted;
+    el.azanAudio.muted = state.muted;
+    el.azanStopBtn.textContent = state.muted ? "إلغاء الكتم" : "كتم";
+  }
+  el.azanStopBtn.addEventListener("click", toggleMute);
+
+  // ---------- notifications ----------
+  function updateNotifyButton(){
+    const supported = "Notification" in window;
+    const granted = supported && Notification.permission === "granted";
+    el.notifyBtn.disabled = !supported || Notification.permission === "denied";
+    el.notifyBtn.classList.toggle("active", granted);
+    el.notifyBtn.textContent = granted ? "🔔 الأدعية مفعّلة" : "🔔 تفعيل الأدعية";
+  }
+
+  function showNotification(title, body, tag){
+    if(!("Notification" in window) || Notification.permission !== "granted") return;
+    const options = {
+      body,
+      icon: "./ChatGPT_Image_Aug_1__2026__10_13_05_PM-removebg-preview.png",
+      badge: "./ChatGPT_Image_Aug_1__2026__10_13_05_PM-removebg-preview.png",
+      tag,
+      data: { url: "./" }
+    };
+    if(state.swRegistration) {
+      state.swRegistration.showNotification(title, options);
+    } else {
+      new Notification(title, options);
+    }
+  }
+
+  function hourlyDuaKey(date = new Date()){
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+  }
+
+  function sendHourlyDua(){
+    const key = hourlyDuaKey();
+    if(state.lastHourlyDuaHour === key) return;
+    state.lastHourlyDuaHour = key;
+    const dua = HOURLY_DUAS[Math.floor(Math.random() * HOURLY_DUAS.length)];
+    showNotification("دعاء الساعة", dua, `hourly-dua-${key}`);
+  }
+
+  function scheduleHourlyDuas(){
+    if(state.hourlyDuaTimer) clearTimeout(state.hourlyDuaTimer);
+    if(!("Notification" in window) || Notification.permission !== "granted") return;
+    const now = new Date();
+    const delay = (60 - now.getMinutes()) * 60000 - now.getSeconds() * 1000 - now.getMilliseconds();
+    state.hourlyDuaTimer = setTimeout(function run(){
+      sendHourlyDua();
+      state.hourlyDuaTimer = setTimeout(run, 60 * 60 * 1000);
+    }, Math.max(delay, 1000));
+  }
+
+  async function requestNotifications(){
+    if(!("Notification" in window)){
+      alert("المتصفح الحالي لا يدعم إشعارات الويب.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    updateNotifyButton();
+    if(permission === "granted"){
+      scheduleHourlyDuas();
+      showNotification("تم تفعيل الأدعية", "سيصلك دعاء عشوائي في بداية كل ساعة ما دام التطبيق مفتوحًا.", "hourly-dua-enabled");
+    }
+  }
+
+  el.notifyBtn.addEventListener("click", requestNotifications);
+  updateNotifyButton();
+
+  // ---------- city search ----------
+  function renderCityList(filterText){
+    const q = (filterText || "").trim();
+    const matches = q
+      ? getLocationChoices().filter(c => c.name.includes(q) || c.country.includes(q) || (c.isUserLocation && USER_LOCATION_LABEL.includes(q.toLowerCase())))
+      : getLocationChoices();
+
+    el.cityList.innerHTML = "";
+    if(matches.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "city-empty";
+      empty.textContent = "لا توجد نتائج";
+      el.cityList.appendChild(empty);
+      return;
+    }
+    matches.forEach(c=>{
+      const item = document.createElement("div");
+      item.className = "city-item" + (c.isUserLocation ? " location-option" : "");
+      item.setAttribute("role","option");
+      item.tabIndex = 0;
+      item.innerHTML = `<b>${c.name}</b><span>${c.isUserLocation ? LOCATION_ICON : c.country}</span>`;
+      item.addEventListener("click", ()=> selectCity(c.id));
+      item.addEventListener("keydown", e=>{ if(e.key==="Enter") selectCity(c.id); });
+      el.cityList.appendChild(item);
+    });
+  }
+
+  async function selectCity(id){
+    if(id === USER_LOCATION_ID){
+      await activateUserLocation({ showLoading:true, timeout:15000 });
+      el.cityList.classList.remove("open");
+      return;
+    }
+    const city = getCityById(id);
+    state.cityId = id;
+    saveCityId(id);
+    updateCitySearchValue(city);
+    el.cityList.classList.remove("open");
+    loadTimings();
+  }
+
+  function updateCitySearchValue(city){
+    el.citySearch.value = city?.isUserLocation ? USER_LOCATION_LABEL : `${city.name}، ${city.country}`;
+  }
+
+  function setLocationPromptVisible(visible){
+    el.locationPrompt.classList.toggle("show", !!visible);
+  }
+
+  function requestUserLocation(options = {}){
+    if(!("geolocation" in navigator) || !window.isSecureContext){
+      setLocationPromptVisible(false);
+      return Promise.resolve(null);
+    }
+    if(options.showLoading){
+      el.statusLabel.textContent = "في انتظار إذن تحديد الموقع…";
+    }
+    return new Promise(resolve=>{
+      navigator.geolocation.getCurrentPosition(position=>{
+        const lat = Number(position.coords.latitude);
+        const lng = Number(position.coords.longitude);
+        const method = getMethodForCoordinates(lat, lng);
+        const city = { id: USER_LOCATION_ID, name: USER_LOCATION_LABEL, country: LOCATION_ICON, lat, lng, method, isUserLocation: true };
+        localStorage.setItem(SAVED_LOCATION_KEY, JSON.stringify({ lat, lng, method, updatedAt: Date.now() }));
+        setLocationPromptVisible(false);
+        resolve(city);
+      }, error=>{
+        console.warn("Location permission unavailable:", error);
+        if(options.showLoading && state.cityId !== USER_LOCATION_ID) setLoading();
+        setLocationPromptVisible(error.code !== error.PERMISSION_DENIED);
+        resolve(null);
+      }, { enableHighAccuracy:true, timeout:options.timeout || 10000, maximumAge:300000 });
+    });
+  }
+
+  async function activateUserLocation(options = {}){
+    const city = await requestUserLocation({ showLoading:!!options.showLoading, timeout:options.timeout || 10000 });
+    if(!city) return false;
+    state.cityId = USER_LOCATION_ID;
+    saveCityId(USER_LOCATION_ID);
+    updateCitySearchValue(city);
+    loadTimings();
+    return true;
+  }
+
+  function requestLocationOnFirstVisit(){
+    const savedLocation = getSavedUserLocation();
+    if(savedLocation){
+      state.cityId = USER_LOCATION_ID;
+      saveCityId(USER_LOCATION_ID);
+      updateCitySearchValue(savedLocation);
+      loadTimings();
+      setLocationPromptVisible(false);
+      return;
+    }
+
+    const fallbackCity = getCityById(state.cityId) || CITIES.find(c=>c.id === "cairo");
+    updateCitySearchValue(fallbackCity);
+    loadTimings();
+    setLocationPromptVisible("geolocation" in navigator && window.isSecureContext);
+
+    activateUserLocation({ timeout:5000 }).then(success=>{
+      if(!success && state.cityId !== USER_LOCATION_ID){
+        updateCitySearchValue(fallbackCity);
+      }
+    });
+  }
+
+  el.locationPromptBtn.addEventListener("click", ()=> activateUserLocation({ showLoading:true, timeout:15000 }));
+
+  el.citySearch.addEventListener("focus", ()=>{
+    el.citySearch.select();
+    renderCityList("");
+    el.cityList.classList.add("open");
+  });
+  el.citySearch.addEventListener("input", ()=>{
+    renderCityList(el.citySearch.value);
+    el.cityList.classList.add("open");
+  });
+  document.addEventListener("click", e=>{
+    if(!e.target.closest(".city-row")){
+      el.cityList.classList.remove("open");
+    }
+  });
+
+  (function initCityBox(){
+    const c = getCityById(state.cityId) || CITIES.find(x=>x.id === "cairo");
+    updateCitySearchValue(c);
+  })();
+
+  // ---------- fetch ----------
+  function setLoading(){
+    el.statusLabel.textContent = "جاري تحميل المواقيت…";
+    el.nextName.textContent = "—";
+    el.countdown.textContent = "--:--:--";
+    el.countdownLabel.textContent = "";
+    el.retryBtn.style.display = "none";
+  }
+
+  function setError(message){
+    el.statusLabel.textContent = "تعذّر تحميل المواقيت";
+    el.nextName.textContent = "";
+    el.countdown.textContent = "";
+    el.countdownLabel.textContent = message;
+    el.retryBtn.style.display = "inline-block";
+  }
+
+  function fetchJson(url){
+    return fetch(url).then(r=>{
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    });
+  }
+
+
+  function formatApiDate(date){
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${day}-${month}-${date.getFullYear()}`;
+  }
+
+  function normalizeTimings(timings){
+    return Object.fromEntries(
+      Object.entries(timings).map(([key, value])=>[key, String(value).match(/\d{1,2}:\d{2}/)?.[0] || value])
+    );
+  }
+
+  function loadTimings(){
+    const city = getCityById(state.cityId) || CITIES.find(c=>c.id === "cairo");
+    if(state._interval) clearInterval(state._interval);
+    resetAlert();
+    state.lastActiveKey = null;
+    setLoading();
+
+    const apiDate = formatApiDate(new Date());
+    const directUrl = `https://api.aladhan.com/v1/timings/${apiDate}?latitude=${city.lat}&longitude=${city.lng}&method=${city.method}&school=0&_=${Date.now()}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
+
+    fetchJson(directUrl)
+      .catch(()=> fetchJson(proxyUrl))
+      .then(json=>{
+        if(json.code !== 200) throw new Error("استجابة غير متوقعة من الخادم");
+        state.timings = normalizeTimings(json.data.timings);
+        state.hijri = json.data.date.hijri;
+        state.gregorian = json.data.date.gregorian;
+        render(city);
+      })
+      .catch(err=>{
+        console.error("Prayer times fetch failed:", err);
+        setError("تأكد من اتصال الإنترنت ثم اضغط إعادة المحاولة. (" + err.message + ")");
+      });
+  }
+
+  el.retryBtn.addEventListener("click", loadTimings);
+
+  // ---------- install / PWA ----------
+  let deferredInstallPrompt = null;
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", ()=>{
+      navigator.serviceWorker.register("service-worker.js").then(reg=>{
+        state.swRegistration = reg;
+        scheduleHourlyDuas();
+      }).catch(err=>{
+        console.warn("Service worker registration failed:", err);
+      });
+    });
+  }
+
+  window.addEventListener("beforeinstallprompt", event=>{
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    el.installBtn.classList.add("show");
+  });
+
+  el.installBtn.addEventListener("click", async ()=>{
+    if(!deferredInstallPrompt){
+      alert("افتح قائمة المتصفح واختر إضافة إلى الشاشة الرئيسية.");
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    el.installBtn.classList.remove("show");
+  });
+
+  window.addEventListener("appinstalled", ()=>{
+    deferredInstallPrompt = null;
+    el.installBtn.classList.remove("show");
+  });
+
+  // ---------- helpers ----------
+  function toMinutes(hhmm){
+    const [h,m] = hhmm.split(":").map(Number);
+    return h*60 + m;
+  }
+
+  function to12Hour(hhmm){
+    const [h,m] = hhmm.split(":").map(Number);
+    const period = h < 12 ? "ص" : "م";
+    let h12 = h % 12;
+    if(h12 === 0) h12 = 12;
+    return `${h12}:${String(m).padStart(2,"0")} ${period}`;
+  }
+
+  function nowMinutes(){
+    const d = new Date();
+    return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60;
+  }
+
+  function fmtCountdown(totalSeconds){
+    const h = Math.floor(totalSeconds/3600);
+    const m = Math.floor((totalSeconds%3600)/60);
+    const s = Math.floor(totalSeconds%60);
+    const pad = n => String(n).padStart(2,"0");
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  // ---------- render ----------
+  function render(city){
+    const t = state.timings;
+
+    const gDate = `${state.gregorian.day} ${state.gregorian.month.en} ${state.gregorian.year}`;
+    const hDate = `${state.hijri.day} ${state.hijri.month.ar} ${state.hijri.year}هـ`;
+    el.dateLine.textContent = `${gDate} — ${hDate}`;
+
+    el.statusLabel.textContent = "الصلاة القادمة";
+    el.countdownLabel.textContent = "متبقٍّ حتى الأذان";
+    el.retryBtn.style.display = "none";
+
+    el.grid.innerHTML = "";
+    PRAYERS.forEach(p=>{
+      const card = document.createElement("div");
+      card.className = "card" + (p.secondary ? " secondary" : "");
+      card.dataset.key = p.key;
+      card.innerHTML = `<div class="p-name">${p.name}</div><div class="p-time">${to12Hour(t[p.key])}</div>`;
+      el.grid.appendChild(card);
+    });
+
+    const methodName = METHOD_NAMES[city.method] || "طريقة قياسية";
+    el.footerNote.innerHTML = city.isUserLocation
+      ? `${LOCATION_ICON} ${USER_LOCATION_LABEL} · طريقة الحساب: ${methodName}`
+      : `${city.name}، ${city.country} · طريقة الحساب: ${methodName}`;
+
+    persistWidgetData(city);
+    buildArc();
+    tick();
+    if(state._interval) clearInterval(state._interval);
+    state._interval = setInterval(tick, 1000);
+  }
+
+  function persistWidgetData(city){
+    if(!state.timings) return;
+    const payload = {
+      updatedAt: Date.now(),
+      city: { id: city.id, name: city.name, country: city.country, lat: city.lat, lng: city.lng, method: city.method, isUserLocation: !!city.isUserLocation },
+      timings: state.timings
+    };
+    localStorage.setItem("prayerTimesWidgetData", JSON.stringify(payload));
+  }
+
+  // ---------- arc ----------
+  const ARC = { cx:230, cy:210, r:190, startDeg:200, endDeg:-20 };
+
+  function angleForMinute(min, fajrMin, ishaMin){
+    const clamped = Math.min(Math.max(min, fajrMin), ishaMin);
+    const ratio = (clamped - fajrMin) / (ishaMin - fajrMin);
+    return ARC.startDeg + ratio * (ARC.endDeg - ARC.startDeg);
+  }
+
+  function pointOnArc(deg){
+    const rad = deg * Math.PI / 180;
+    return {
+      x: ARC.cx + ARC.r * Math.cos(rad),
+      y: ARC.cy - ARC.r * Math.sin(rad) * 0.62
+    };
+  }
+
+  function buildArc(){
+    const t = state.timings;
+    const fajrMin = toMinutes(t.Fajr);
+    const ishaMin = toMinutes(t.Isha);
+
+    const startP = pointOnArc(ARC.startDeg);
+    const endP = pointOnArc(ARC.endDeg);
+
+    el.arcTrack.setAttribute("d",
+      `M ${startP.x} ${startP.y} Q ${ARC.cx} ${ARC.cy - ARC.r*0.9} ${endP.x} ${endP.y}`);
+
+    el.arcPoints.innerHTML = "";
+    PRAYERS.forEach(p=>{
+      const min = toMinutes(t[p.key]);
+      const deg = angleForMinute(min, fajrMin, ishaMin);
+      const pos = pointOnArc(deg);
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.setAttribute("class","arc-point");
+      g.dataset.key = p.key;
+
+      const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      circle.setAttribute("cx", pos.x);
+      circle.setAttribute("cy", pos.y);
+      circle.setAttribute("r", p.secondary ? 5 : 7);
+      g.appendChild(circle);
+
+      const label = document.createElementNS("http://www.w3.org/2000/svg","text");
+      label.setAttribute("x", pos.x);
+      label.setAttribute("y", pos.y - 14);
+      label.setAttribute("text-anchor","middle");
+      label.textContent = p.name;
+      g.appendChild(label);
+
+      el.arcPoints.appendChild(g);
+    });
+  }
+
+  function updateGlyphPosition(){
+    const t = state.timings;
+    const fajrMin = toMinutes(t.Fajr);
+    const ishaMin = toMinutes(t.Isha);
+    const now = nowMinutes();
+    const deg = angleForMinute(now, fajrMin, ishaMin);
+    const pos = pointOnArc(deg);
+    el.arcGlyph.setAttribute("x", pos.x);
+    el.arcGlyph.setAttribute("y", pos.y - 22);
+    const isDaytime = now >= fajrMin && now <= ishaMin;
+    el.arcGlyph.textContent = isDaytime ? "☀" : "☾";
+  }
+
+  // ---------- tick ----------
+  function tick(){
+    const t = state.timings;
+    if(!t) return;
+
+    const now = nowMinutes();
+    const order = OBLIGATORY.map(key => ({ key, min: toMinutes(t[key]) }));
+
+    let next = order.find(p => p.min > now);
+    if(!next){
+      next = { key:"Fajr", min: toMinutes(t.Fajr) + 24*60 };
+    }
+
+    const diffSeconds = Math.round((next.min - now) * 60);
+
+    const nextObj = PRAYERS.find(p=>p.key === next.key);
+    el.nextName.textContent = nextObj ? nextObj.name : "الفجر";
+    el.countdown.textContent = fmtCountdown(Math.max(diffSeconds,0));
+    document.querySelectorAll(".card").forEach(c=>{
+      c.classList.toggle("next", c.dataset.key === next.key);
+    });
+    document.querySelectorAll(".arc-point").forEach(g=>{
+      g.classList.toggle("next", g.dataset.key === next.key);
+    });
+
+    updateGlyphPosition();
+
+    let activeKey = null;
+    for(let i=order.length-1;i>=0;i--){
+      if(now >= order[i].min){ activeKey = order[i].key; break; }
+    }
+    if(!activeKey) activeKey = "Isha";
+
+    if(state.lastActiveKey !== null && state.lastActiveKey !== activeKey){
+      const startedPrayer = PRAYERS.find(p=>p.key === activeKey);
+      startAdhanAlert(startedPrayer ? startedPrayer.name : activeKey);
+    }
+    state.lastActiveKey = activeKey;
+  }
+
+  requestLocationOnFirstVisit();
+})();
+
+</script>
+</body>
+</html>
