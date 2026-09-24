@@ -370,7 +370,7 @@
     </div>
     <div class="header-actions">
       <button class="install-btn" id="installBtn" type="button" aria-label="تحميل الموقع على الشاشة الرئيسية">⬇ تحميل</button>
-      <button class="notify-btn" id="notifyBtn" type="button" aria-label="تفعيل إشعارات الأدعية كل ساعة">🔔 تفعيل الأدعية</button>
+      <button class="notify-btn" id="notifyBtn" type="button" aria-label="تفعيل تذكير الأذكار كل 20 دقيقة">🔔 تفعيل تذكير الأذكار</button>
       <button class="theme-toggle" id="themeToggle" aria-label="تبديل الوضع الليلي والنهاري">☾</button>
     </div>
   </header>
@@ -750,7 +750,8 @@
   const USER_LOCATION_ID = "user_location";
   const USER_LOCATION_LABEL = "your location";
   const LOCATION_ICON = "📍";
-  const HOURLY_DUAS = [
+  const DHIKR_REMINDER_INTERVAL_MINUTES = 20;
+  const ADHKAR = [
     "اللهم أعنّي على ذكرك وشكرك وحسن عبادتك.",
     "رب اشرح لي صدري ويسر لي أمري.",
     "اللهم اغفر لي ولوالدي وللمؤمنين يوم يقوم الحساب.",
@@ -821,8 +822,8 @@
     ringing: false,
     muted: false,
     swRegistration: null,
-    hourlyDuaTimer: null,
-    lastHourlyDuaHour: null
+    dhikrReminderTimer: null,
+    lastDhikrReminderSlot: null
   };
 
   const el = {
@@ -917,7 +918,7 @@
     const granted = supported && Notification.permission === "granted";
     el.notifyBtn.disabled = !supported || Notification.permission === "denied";
     el.notifyBtn.classList.toggle("active", granted);
-    el.notifyBtn.textContent = granted ? "🔔 الأدعية مفعّلة" : "🔔 تفعيل الأدعية";
+    el.notifyBtn.textContent = granted ? "🔔 تذكير الأذكار مفعّل" : "🔔 تفعيل تذكير الأذكار";
   }
 
   function showNotification(title, body, tag){
@@ -936,26 +937,27 @@
     }
   }
 
-  function hourlyDuaKey(date = new Date()){
-    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+  function dhikrReminderSlot(date = new Date()){
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${Math.floor(date.getMinutes() / DHIKR_REMINDER_INTERVAL_MINUTES)}`;
   }
 
-  function sendHourlyDua(){
-    const key = hourlyDuaKey();
-    if(state.lastHourlyDuaHour === key) return;
-    state.lastHourlyDuaHour = key;
-    const dua = HOURLY_DUAS[Math.floor(Math.random() * HOURLY_DUAS.length)];
-    showNotification("دعاء الساعة", dua, `hourly-dua-${key}`);
+  function sendDhikrReminder(){
+    const slot = dhikrReminderSlot();
+    if(state.lastDhikrReminderSlot === slot) return;
+    state.lastDhikrReminderSlot = slot;
+    const dhikr = ADHKAR[Math.floor(Math.random() * ADHKAR.length)];
+    showNotification("تذكير بالأذكار", dhikr, `dhikr-reminder-${slot}`);
   }
 
-  function scheduleHourlyDuas(){
-    if(state.hourlyDuaTimer) clearTimeout(state.hourlyDuaTimer);
+  function scheduleDhikrReminders(){
+    if(state.dhikrReminderTimer) clearTimeout(state.dhikrReminderTimer);
     if(!("Notification" in window) || Notification.permission !== "granted") return;
     const now = new Date();
-    const delay = (60 - now.getMinutes()) * 60000 - now.getSeconds() * 1000 - now.getMilliseconds();
-    state.hourlyDuaTimer = setTimeout(function run(){
-      sendHourlyDua();
-      state.hourlyDuaTimer = setTimeout(run, 60 * 60 * 1000);
+    const minutesUntilNextReminder = DHIKR_REMINDER_INTERVAL_MINUTES - (now.getMinutes() % DHIKR_REMINDER_INTERVAL_MINUTES);
+    const delay = minutesUntilNextReminder * 60000 - now.getSeconds() * 1000 - now.getMilliseconds();
+    state.dhikrReminderTimer = setTimeout(function run(){
+      sendDhikrReminder();
+      state.dhikrReminderTimer = setTimeout(run, DHIKR_REMINDER_INTERVAL_MINUTES * 60 * 1000);
     }, Math.max(delay, 1000));
   }
 
@@ -967,8 +969,8 @@
     const permission = await Notification.requestPermission();
     updateNotifyButton();
     if(permission === "granted"){
-      scheduleHourlyDuas();
-      showNotification("تم تفعيل الأدعية", "سيصلك دعاء عشوائي في بداية كل ساعة ما دام التطبيق مفتوحًا.", "hourly-dua-enabled");
+      scheduleDhikrReminders();
+      showNotification("تم تفعيل تذكير الأذكار", "سيصلك ذكر عشوائي كل 20 دقيقة ما دام التطبيق مفتوحًا.", "dhikr-reminder-enabled");
     }
   }
 
@@ -1177,7 +1179,7 @@
     window.addEventListener("load", ()=>{
       navigator.serviceWorker.register("service-worker.js").then(reg=>{
         state.swRegistration = reg;
-        scheduleHourlyDuas();
+        scheduleDhikrReminders();
       }).catch(err=>{
         console.warn("Service worker registration failed:", err);
       });
