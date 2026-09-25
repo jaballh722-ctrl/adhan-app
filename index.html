@@ -748,7 +748,9 @@
   const SAVED_CITY_KEY = "prayerTimesSelectedCityId";
   const SAVED_LOCATION_KEY = "prayerTimesUserLocation";
   const USER_LOCATION_ID = "user_location";
-  const USER_LOCATION_LABEL = "your location";
+  const USER_LOCATION_LABEL = "موقعي الحالي";
+  const TIMINGS_CACHE_PREFIX = "prayerTimesTimings:";
+  const TIMINGS_CACHE_MAX_AGE = 36 * 60 * 60 * 1000;
   const LOCATION_ICON = "📍";
   const DHIKR_REMINDER_INTERVAL_MINUTES = 20;
   const ADHKAR = [
@@ -823,7 +825,9 @@
     muted: false,
     swRegistration: null,
     dhikrReminderTimer: null,
-    lastDhikrReminderSlot: null
+    lastDhikrReminderSlot: null,
+    timingsRequest: null,
+    timingsLoadId: 0
   };
 
   const el = {
@@ -1019,7 +1023,11 @@
   }
 
   function updateCitySearchValue(city){
-    el.citySearch.value = city?.isUserLocation ? USER_LOCATION_LABEL : `${city.name}، ${city.country}`;
+    if(!city){
+      el.citySearch.value = "";
+      return;
+    }
+    el.citySearch.value = city.isUserLocation ? USER_LOCATION_LABEL : `${city.name}، ${city.country}`;
   }
 
   function setLocationPromptVisible(visible){
@@ -1124,8 +1132,8 @@
     el.retryBtn.style.display = "inline-block";
   }
 
-  function fetchJson(url){
-    return fetch(url).then(r=>{
+  function fetchJson(url, signal){
+    return fetch(url, { signal, cache:"no-store" }).then(r=>{
       if(!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
     });
@@ -1144,8 +1152,49 @@
     );
   }
 
+  function timingsCacheKey(city, date){
+    return `${TIMINGS_CACHE_PREFIX}${city.id}:${date}`;
+  }
+
+  function hasRequiredTimings(timings){
+    return OBLIGATORY.every(key => /^\d{1,2}:\d{2}$/.test(String(timings?.[key] || "")));
+  }
+
+  function getCachedTimings(city, date){
+    try{
+      const cached = JSON.parse(localStorage.getItem(timingsCacheKey(city, date)) || "null");
+      if(!cached || Date.now() - cached.savedAt > TIMINGS_CACHE_MAX_AGE || !hasRequiredTimings(cached.timings)) return null;
+      return cached;
+    }catch{
+      return null;
+    }
+  }
+
+  function cacheTimings(city, date, data){
+    try{
+      localStorage.setItem(timingsCacheKey(city, date), JSON.stringify({ ...data, savedAt:Date.now() }));
+    }catch(error){
+      console.warn("Could not cache prayer times:", error);
+    }
+  }
+
+  function applyTimings(city, data, cached){
+    state.timings = normalizeTimings(data.timings);
+    state.hijri = data.hijri;
+    state.gregorian = data.gregorian;
+    render(city);
+    if(cached){
+      el.countdownLabel.textContent = "المواقيت المحفوظة مؤقتًا — تحقق من الإنترنت للتحديث";
+    }
+  }
+
   function loadTimings(){
     const city = getCityById(state.cityId) || CITIES.find(c=>c.id === "cairo");
+    const loadId = ++state.timingsLoadId;
+    if(state.timingsRequest) state.timingsRequest.abort();
+    const requestController = new AbortController();
+    state.timingsRequest = requestController;
+    const requestTimeout = setTimeout(()=> requestController.abort(), 15000);
     if(state._interval) clearInterval(state._interval);
     resetAlert();
     state.lastActiveKey = null;
@@ -1155,19 +1204,27 @@
     const directUrl = `https://api.aladhan.com/v1/timings/${apiDate}?latitude=${city.lat}&longitude=${city.lng}&method=${city.method}&school=0&_=${Date.now()}`;
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
 
-    fetchJson(directUrl)
-      .catch(()=> fetchJson(proxyUrl))
+    fetchJson(directUrl, requestController.signal)
+      .catch(error=> error.name === "AbortError" ? Promise.reject(error) : fetchJson(proxyUrl, requestController.signal))
       .then(json=>{
         if(json.code !== 200) throw new Error("استجابة غير متوقعة من الخادم");
-        state.timings = normalizeTimings(json.data.timings);
-        state.hijri = json.data.date.hijri;
-        state.gregorian = json.data.date.gregorian;
-        render(city);
+        const data = { timings:json.data?.timings, hijri:json.data?.date?.hijri, gregorian:json.data?.date?.gregorian };
+        if(!hasRequiredTimings(data.timings) || !data.hijri || !data.gregorian) throw new Error("بيانات مواقيت غير صالحة");
+        if(loadId !== state.timingsLoadId) return;
+        cacheTimings(city, apiDate, data);
+        applyTimings(city, data, false);
       })
       .catch(err=>{
+        if(err.name === "AbortError" || loadId !== state.timingsLoadId) return;
         console.error("Prayer times fetch failed:", err);
+        const cached = getCachedTimings(city, apiDate);
+        if(cached){
+          applyTimings(city, cached, true);
+          return;
+        }
         setError("تأكد من اتصال الإنترنت ثم اضغط إعادة المحاولة. (" + err.message + ")");
-      });
+      })
+      .finally(()=> clearTimeout(requestTimeout));
   }
 
   el.retryBtn.addEventListener("click", loadTimings);
